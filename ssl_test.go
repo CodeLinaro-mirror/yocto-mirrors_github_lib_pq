@@ -20,6 +20,7 @@ import (
 
 // Environment sanity check: should fail without SSL.
 func startSSLTest(t *testing.T, user string) {
+	pqtest.SkipCockroach(t) // TODO: setup SSL
 	_, err := pqtest.DB(t, "sslmode=disable user="+user)
 	if !pqtest.ErrorContains(err, `or:no encryption (28000)|login rejected (08P01)`) {
 		t.Fatalf("wrong error: %q", err)

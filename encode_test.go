@@ -51,6 +51,9 @@ func TestTimeScan(t *testing.T) {
 	t.Parallel()
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
+			if strings.Contains(tt.in, "Etc/") {
+				pqtest.SkipCockroach(t) // https://github.com/cockroachdb/cockroach/issues/167310
+			}
 			have := pqtest.QueryRow[time.Time](t, db, fmt.Sprintf(`select $1::%s as t`, tt.typ), tt.in)["t"]
 			if !tt.want.Equal(have) {
 				t.Errorf("\nhave: %s\nwant: %s", have, tt.want)
@@ -248,21 +251,25 @@ func TestDecodeScan(t *testing.T) {
 		wantErrBin string
 	}{
 		{`select $1::text`, []any{"hello\x00world"}, nil, `invalid byte sequence`, `X`},
+		{`select $1::text`, []any{"hello\xffworld"}, nil, `re:invalid (byte|UTF-8) sequence`, `X`},
 		{`select $1::text`, []any{[]byte("hello world")}, "hello world", ``, `X`},
 		{`select $1::bytea`, []any{[]byte("hello world")}, []byte("hello world"), ``, `X`},
 
 		{`select $1::uuid`, []any{[]byte(uuid)}, []byte(uuid), ``, `pq: incorrect binary data format in bind parameter 1 (22P03)`},
-		{`select $1::uuid`, []any{uuidb}, []byte(uuid), `invalid byte sequence`, ``},
+		{`select $1::uuid`, []any{uuidb}, []byte(uuid), `or:invalid byte sequence|incorrect UUID length`, ``},
 		{`select $1::uuid`, []any{uuid}, []byte(uuid), ``, `X`},
 
 		{`select $1::int`, []any{fmt.Append(nil, 12345678)}, int64(12345678), ``, `pq: incorrect binary data format in bind parameter 1 (22P03)`},
-		{`select $1::int`, []any{[]byte{0x00, 0xbc, 0x61, 0x4e}}, int64(12345678), `invalid byte sequence`, ``},
+		{`select $1::int`, []any{[]byte{0x00, 0xbc, 0x61, 0x4e}}, int64(12345678), `or:invalid byte sequence|could not parse "\x00\xbcaN" as type int4`, ``},
 	}
 
 	t.Parallel()
 	db := pqtest.MustDB(t)
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
+			if s, ok := tt.params[0].(string); ok && strings.ContainsRune(s, 0x00) {
+				pqtest.SkipCockroach(t) // https://github.com/cockroachdb/cockroach/issues/167287
+			}
 			var have any
 			err := db.QueryRow(tt.query, tt.params...).Scan(&have)
 			wantErr := tt.wantErr
