@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+- Implement `require_auth` connection parameter ([#1310]).
+
+[#1310]: https://github.com/lib/pq/pull/1310
 
 v1.12.2 (2026-04-02)
 --------------------
