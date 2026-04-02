@@ -124,7 +124,7 @@ func TestNewConnector(t *testing.T) {
 			`or:pq: database "two" does not exist (3D000)|pq: no such database: two (08P01)`
 
 		// Make sure database= consistently take precedence over dbname=
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			_, err := pqtest.DB(t, "database=err")
 			if !pqtest.ErrorContains(err, want1) {
 				t.Errorf("wrong error:\nhave: %s\nwant: %s", err, want1)
@@ -653,7 +653,7 @@ func TestConnectMulti(t *testing.T) {
 
 	t.Run("load_balance_hosts=random", func(t *testing.T) {
 		hosts := [3]int{}
-		for i := 0; i < 25; i++ {
+		for range 25 {
 			connectedTo = [3]bool{}
 			_ = pqtest.MustDB(t, fmt.Sprintf("host=%s,%s,%s port=%s,%s,%s load_balance_hosts=random",
 				f1.Host(), f2.Host(), f3.Host(), f1.Port(), f2.Port(), f3.Port()))
@@ -706,7 +706,6 @@ func TestConnectionTargetSessionAttrs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run("", func(t *testing.T) {
 			t.Parallel()
 
@@ -763,7 +762,7 @@ func TestProtocolVersion(t *testing.T) {
 		key30 = []byte{1, 2, 3, 4}
 		key32 = make([]byte, 32)
 	)
-	for i := 0; i < 32; i++ {
+	for i := range 32 {
 		key32[i] = byte(i)
 	}
 	accept := func(version float32) (*[]byte, func(f pqtest.Fake, cn net.Conn)) {
@@ -826,7 +825,6 @@ func TestProtocolVersion(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run("", func(t *testing.T) {
 			t.Parallel()
 			have, a := accept(tt.serverVersion)
